@@ -38,7 +38,7 @@ if __name__ == '__main__':
         # Receive ack - if ack is correct, start game
         ack_msg = client_socket.recv(SIZE).decode()
 
-        lines = [l for l in ack_msg.split('\r\n') if l]
+        lines = [line for line in ack_msg.split('\r\n') if line]
 
         if not check_msg(ack_msg, MY_IP) or not lines[0].startswith('ACK'):
             print("Invalid ACK. Closing connection.")

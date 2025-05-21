@@ -222,6 +222,7 @@ class TTT(tk.Tk):
             ack_msg = (
             "ACK ETTTP/1.0\r\n"
             f"Host:{self.send_ip}\r\n"
+            f"New-Move:({row},{col})\r\n"  
             "\r\n"
         )
             self.socket.sendall(ack_msg.encode())
@@ -405,8 +406,8 @@ def check_msg(msg, recv_ip):
     '''
     ###################  Fill Out  #######################
 
-    lines = [l for l in msg.split('\r\n') if l]
-    if len(lines) < 2:
+    lines = [line for line in msg.split('\r\n') if line]
+    if len(lines) < 3:
         return False
 
     # 첫 줄: TYPE ETTTP/1.0
@@ -429,8 +430,6 @@ def check_msg(msg, recv_ip):
     # --- 3) 타입별 본문 검증 ---
     if msg_type == 'SEND':
         # 본문이 First-Move 또는 New-Move 여야 함
-        if len(lines) < 3:
-            return False
         body = lines[2].strip()
 
         # First-move:(0) or (1)
@@ -444,21 +443,33 @@ def check_msg(msg, recv_ip):
             return False
 
     elif msg_type == 'ACK':
-        # 2줄짜리 ACK도 OK
-        if len(lines) == 2:
-            return True
-        # 3줄째에 New-Move 허용
-        elif not lines[2].startswith('New-Move:'):
+
+        body = lines[2].strip()
+
+        if body.startswith('First-Move:'):
+            val = body[len('First-Move:'):].strip()
+            if val not in ('0', '1'):
+                return False
+
+        elif body.startswith('New-Move:'):
+            point = body[len('New-Move:'):].strip()
+            try:
+                row, col = map(int, point.strip('()').split(','))
+                if not (0 <= row <= 2 and 0 <= col <= 2):
+                    return False
+            except:
+                return False
+
+        else:
             return False
 
     elif msg_type == 'RESULT':
         # 예: "Winner:ME" or "Winner:YOU"
-        if len(lines) < 3 or not lines[2].startswith('Winner:'):
+        if not lines[2].startswith('Winner:'):
             return False
         val = lines[2][len('Winner:'):].strip()
         if val not in ('ME', 'YOU'):
             return False
 
-    # ACK는 헤더 검사만으로 충분
     return True
     ######################################################  

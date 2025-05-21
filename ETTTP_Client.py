@@ -24,7 +24,7 @@ if __name__ == '__main__':
         ###################################################################
         # Receive who will start first from the server
         start_msg = client_socket.recv(SIZE).decode()
-        lines = [l for l in start_msg.split('\r\n') if l]
+        lines = [line for line in start_msg.split('\r\n') if line]
         if not check_msg(start_msg, MY_IP) or not lines[0].startswith('SEND'):
             print("Invalid START message. Exiting.")
             exit()
@@ -34,9 +34,15 @@ if __name__ == '__main__':
     
         ######################### Fill Out ################################
         # Send ACK 
+        if start == 1:
+            ackstart = 0
+        else:
+            ackstart = 1
+        
         ack_msg = (
             "ACK ETTTP/1.0\r\n"
             f"Host:{SERVER_IP}\r\n"
+            f"First-Move:{ackstart}\r\n"
             "\r\n"
         )
         client_socket.sendall(ack_msg.encode())
