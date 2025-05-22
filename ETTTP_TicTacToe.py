@@ -206,9 +206,10 @@ class TTT(tk.Tk):
         '''
         ###################  Fill Out  #######################
         msg = self.socket.recv(SIZE).decode()
-        lines = msg.split('\r\n')
-        hdr = lines[0].split()
-        msg_valid_check = not(check_msg(msg, self.recv_ip) and (hdr[0] == "SEND"))
+        lines = [line for line in msg.split('\r\n') if line]
+
+        val = lines[0].split()
+        msg_valid_check = not(check_msg(msg, self.recv_ip) and (val[0] == "SEND"))
         
         if msg_valid_check: # Message is not valid
             self.socket.close()   
@@ -264,7 +265,7 @@ class TTT(tk.Tk):
         '''
         Get ack
         '''
-        lines = [l for l in d_msg.split('\r\n') if l]
+        lines = [line for line in d_msg.split('\r\n') if line]
         point = lines[2][len('New-Move:'):].strip()
 
         row, col = map(int, point.strip('()').split(','))
@@ -309,7 +310,7 @@ class TTT(tk.Tk):
         self.socket.sendall(msg.encode())
         
         ack = self.socket.recv(SIZE).decode()
-        lines = [l for l in ack.split('\r\n') if l]
+        lines = [line for line in ack.split('\r\n') if line]
         if not check_msg(ack, self.recv_ip) or not lines[0].startswith('ACK'):
             return False
         return True
@@ -333,14 +334,14 @@ class TTT(tk.Tk):
             self.socket.sendall(msg.encode())
         
             data = self.socket.recv(SIZE).decode()
-            lines = [l for l in data.split('\r\n') if l]
+            lines = [line for line in data.split('\r\n') if line]
             if not check_msg(data, self.recv_ip) or not lines[0].startswith('RESULT'):
                 return False
             return (lines[2][len('Winner:'):].strip() == winner)
         else:
             # 상대가 이겼으니 먼저 수신
             data = self.socket.recv(SIZE).decode()
-            lines = [l for l in data.split('\r\n') if l]
+            lines = [line for line in data.split('\r\n') if line]
             if not check_msg(data, self.recv_ip) or not lines[0].startswith('RESULT'):
                 return False
             if lines[2][len('Winner:'):].strip() != winner:
@@ -411,10 +412,10 @@ def check_msg(msg, recv_ip):
         return False
 
     # 첫 줄: TYPE ETTTP/1.0
-    hdr = lines[0].split()
-    if len(hdr) != 2:
+    val = lines[0].split()
+    if len(val) != 2:
         return False
-    msg_type, version = hdr
+    msg_type, version = val
     if msg_type not in ('SEND','ACK','RESULT'):
         return False
     if version != 'ETTTP/1.0':
