@@ -474,13 +474,7 @@ def check_msg(msg, recv_ip): # 메시지 유효성 여부 확인
         # New-Move:는 본문이 좌표값이 와야 함
         elif body.startswith('New-Move:'):
             point = body[len('New-Move:'):].strip()
-            # 좌표값의 숫자값이 정해진 값 이외의 값이면, False
-            try:
-                row, col = map(int, point.strip('()').split(','))
-                if not (0 <= row <= 2 and 0 <= col <= 2):
-                    return False
-            except:
-                return False
+            row, col = map(int, point.strip('()').split(','))
 
         # msg_type이 ACK인데 본문이 First-Move와 New-Move 이외의 값이 오면, False
         else:
