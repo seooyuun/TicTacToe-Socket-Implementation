@@ -25,23 +25,27 @@ if __name__ == '__main__':
         
         ###################################################################
         # Send start move information to peer
+        # start 정보가 담긴 SEND msg 생성
         start_msg = (
             "SEND ETTTP/1.0\r\n"
             f"Host:{client_addr[0]}\r\n"
             f"First-Move:{start}\r\n"
             "\r\n"
         )
-           
+        
+        # client_socket에 start_msg를 담아서 전송
         client_socket.sendall(start_msg.encode())
     
         ######################### Fill Out ################################
         # Receive ack - if ack is correct, start game
+
+        # Client가 보낸 ack_msg( = START 정보가 담긴 SEND msg를 잘 받았다고 확인한 ACK msg)를 받아서 decode
         ack_msg = client_socket.recv(SIZE).decode()
 
-        lines = [line for line in ack_msg.split('\r\n') if line]
+        lines = [line for line in ack_msg.split('\r\n') if line] # ack_msg를 line 단위로 split
 
-        if not check_msg(ack_msg, MY_IP) or not lines[0].startswith('ACK'):
-            print("Invalid ACK. Closing connection.")
+        if not check_msg(ack_msg, MY_IP) or not lines[0].startswith('ACK'): # check_msg가 false이거나(=msg에 오류), 받은 msg가 ACK 가 아니라면 종료
+            print("Invalid ACK.")
             client_socket.close()
             server_socket.close()
             exit()
