@@ -338,7 +338,7 @@ class TTT(tk.Tk):
         '''
         # no skeleton
         ###################  Fill Out  #######################
-        if not get: # 내가 이겼울 경우: 결과 전송 후 상대의 확인 결과 수신신
+        if not get: # 내가 이겼울 경우: 결과 전송 후 상대의 확인 결과 수신
             msg = (
             "RESULT ETTTP/1.0\r\n"
             f"Host:{self.send_ip}\r\n"
@@ -350,20 +350,33 @@ class TTT(tk.Tk):
             data = self.socket.recv(SIZE).decode() # 상대의 ACK 응답 수신
             lines = [line for line in data.split('\r\n') if line]
 
-            # 메시지 유효성 및 결과 일치 여부 확인
+            # 메시지 유효성 여부 확인
             if not check_msg(data, self.recv_ip) or not lines[0].startswith('RESULT'):
                 return False
-            return (lines[2][len('Winner:'):].strip() == winner)
+            # 상대와 나의 결과 일치 여부 확인
+            if lines[2][len('Winner:'):].strip() != winner:
+                print("Something is wrong..")
+                self.socket.close()   
+                self.quit()
+                return False
+            
+            return True
         else:
             # 상대가 이겼으니 상대가 보낸 메세지를 수신
             data = self.socket.recv(SIZE).decode()
             lines = [line for line in data.split('\r\n') if line]
 
-            # 메시지 유효성 및 결과 일치 여부 확인
+            # 메시지 유효성 여부 확인
             if not check_msg(data, self.recv_ip) or not lines[0].startswith('RESULT'):
                 return False
+            
+            # 상대와 나의 결과 일치 여부 확인
             if lines[2][len('Winner:'):].strip() != winner:
+                print("Something is wrong..")
+                self.socket.close()   
+                self.quit()
                 return False
+            
             # RESULT 응답, 확인 메시지 전송( = 너가 이긴 것 확인했어 )
             msg = (
             "RESULT ETTTP/1.0\r\n"
