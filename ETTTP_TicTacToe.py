@@ -267,20 +267,28 @@ class TTT(tk.Tk):
         Get ack
         '''
         lines = [line for line in d_msg.split('\r\n') if line] # 받은 d_msg를 line 단위로 split
-        point = lines[2][len('New-Move:'):].strip() # 세 번째 라인에서 New-Move: 뒤부터 끝까지 분리
 
-        row, col = map(int, point.strip('()').split(',')) # 좌표 문자열을 (row, col) 정수로 변환
+        val = lines[0].split() # 첫 번째 line을 split해서 이를 val에 저장 ( = SEND ETTTP/1.0 )
 
-        selection = row * 3 + col # 좌표를 1차원 인덱스로 변환
+        d_msg_valid_check = not(check_msg(d_msg, self.recv_ip) and (val[0] == "SEND")) # d_msg가 valid한지 check, boolean 값으로 리턴 
         
-        # 이미 놓인 자리인지 확인: 놓여있다면 종료
-        if self.board[selection] != 0:
+        if d_msg_valid_check: # d_msg 형식이 올바르지 않거나 SEND가 아닌 경우, 종료
+            self.t_debug.delete(1.0,"end")
             return
-        # 상대에게 메시지 전송 및 ACK 확인 실패 시 종료
-        if not self.send_move(selection):
-            return
-        # 유효한 위치일 시 해당 위치를 이동으로 처리
-        loc = selection
+
+        else:
+            point = lines[2][len('New-Move:'):].strip() # 세 번째 라인에서 New-Move: 뒤부터 끝까지 분리
+            row, col = map(int, point.strip('()').split(',')) # 좌표 문자열을 (row, col) 정수로 변환
+            selection = row * 3 + col # 좌표를 1차원 인덱스로 변환
+        
+            # 이미 놓인 자리인지 확인: 놓여있다면 종료
+            if self.board[selection] != 0:
+                return
+            # 상대에게 메시지 전송 및 ACK 확인 실패 시 종료
+            if not self.send_move(selection):
+                return
+            # 유효한 위치일 시 해당 위치를 이동으로 처리
+            loc = selection
 
         ######################################################  
         
@@ -330,7 +338,7 @@ class TTT(tk.Tk):
         '''
         # no skeleton
         ###################  Fill Out  #######################
-        if not get: # 내가 이겼울 경우: 결과 전송 후 상대의 확인 결과 수신신
+        if not get: # 내가 이겼울 경우: 결과 전송 후 상대의 확인 결과 수신
             msg = (
             "RESULT ETTTP/1.0\r\n"
             f"Host:{self.send_ip}\r\n"
@@ -342,20 +350,33 @@ class TTT(tk.Tk):
             data = self.socket.recv(SIZE).decode() # 상대의 ACK 응답 수신
             lines = [line for line in data.split('\r\n') if line]
 
-            # 메시지 유효성 및 결과 일치 여부 확인
+            # 메시지 유효성 여부 확인
             if not check_msg(data, self.recv_ip) or not lines[0].startswith('RESULT'):
                 return False
-            return (lines[2][len('Winner:'):].strip() == winner)
+            # 상대와 나의 결과 일치 여부 확인
+            if lines[2][len('Winner:'):].strip() != winner:
+                print("Something is wrong..")
+                self.socket.close()   
+                self.quit()
+                return False
+            
+            return True
         else:
             # 상대가 이겼으니 상대가 보낸 메세지를 수신
             data = self.socket.recv(SIZE).decode()
             lines = [line for line in data.split('\r\n') if line]
 
-            # 메시지 유효성 및 결과 일치 여부 확인
+            # 메시지 유효성 여부 확인
             if not check_msg(data, self.recv_ip) or not lines[0].startswith('RESULT'):
                 return False
+            
+            # 상대와 나의 결과 일치 여부 확인
             if lines[2][len('Winner:'):].strip() != winner:
+                print("Something is wrong..")
+                self.socket.close()   
+                self.quit()
                 return False
+            
             # RESULT 응답, 확인 메시지 전송( = 너가 이긴 것 확인했어 )
             msg = (
             "RESULT ETTTP/1.0\r\n"
@@ -416,7 +437,7 @@ def check_msg(msg, recv_ip): # 메시지 유효성 여부 확인
     Function that checks if received message is ETTTP format
     '''
     ###################  Fill Out  #######################
-    # 받은 msg를 line 단위로 나누고, 공백 제거거
+    # 받은 msg를 line 단위로 나누고, 공백 제거
     lines = [line for line in msg.split('\r\n') if line]
 
     # 만약 line의 개수가 3개 미만이라면, 유효하지 않은 메시지이므로 False 리턴
