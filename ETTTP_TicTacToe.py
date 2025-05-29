@@ -324,8 +324,9 @@ class TTT(tk.Tk):
         ack = self.socket.recv(SIZE).decode() # ACK 수신
         lines = [line for line in ack.split('\r\n') if line] # 수신한 ack msg를 line 단위로 split
         # ACK 메시지가 정상 형식인지 확인(형식에 어긋나거나 ACK 메시지가 아니면 False)
-        if not check_msg(ack, self.recv_ip) or not lines[0].startswith('ACK'):
-            return False
+        if check_msg(ack, self.recv_ip):
+            if "ACK" not in lines[0]:
+                return False
         # 정상 수신 시 Ture 리턴
         return True
         ######################################################  
@@ -351,7 +352,10 @@ class TTT(tk.Tk):
             lines = [line for line in data.split('\r\n') if line]
 
             # 메시지 유효성 여부 확인
-            if not check_msg(data, self.recv_ip) or not lines[0].startswith('RESULT'):
+            if check_msg(data, self.recv_ip):
+                if "RESULT" not in lines[0]:
+                    return False
+            else:
                 return False
             # 상대와 나의 결과 일치 여부 확인
             if lines[2][len('Winner:'):].strip() != winner:
@@ -367,9 +371,11 @@ class TTT(tk.Tk):
             lines = [line for line in data.split('\r\n') if line]
 
             # 메시지 유효성 여부 확인
-            if not check_msg(data, self.recv_ip) or not lines[0].startswith('RESULT'):
+            if check_msg(data, self.recv_ip):
+                if "RESULT" not in lines[0]:
+                    return False
+            else:
                 return False
-            
             # 상대와 나의 결과 일치 여부 확인
             if lines[2][len('Winner:'):].strip() != winner:
                 print("Something is wrong..")
@@ -459,7 +465,7 @@ def check_msg(msg, recv_ip): # 메시지 유효성 여부 확인
         return False
     
     # 두 번째 줄 검사: Host 헤더 확인
-    if not lines[1].startswith('Host:'): # lines[1]이 Host: 로 시작하지 않는다면, False
+    if 'Host:' not in lines[1]: # lines[1]이 Host: 로 시작하지 않는다면, False
         return False
     # Host: 뒤의 IP destination 추출
     dst = lines[1][len('Host:'):].strip()
@@ -473,13 +479,13 @@ def check_msg(msg, recv_ip): # 메시지 유효성 여부 확인
         body = lines[2].strip()
 
         # First-move: 는 본문이 0 또는 1이어야 함
-        if body.startswith('First-Move:'):
+        if 'First-Move:' in body:
             val = body[len('First-Move:'):].strip()
             if val not in ('0', '1'):
                 return False
 
         # New-Move:는 본문이 좌표값이 와야 함
-        elif not body.startswith('New-Move:'):
+        elif 'New-Move:' not in body:
             return False
 
     elif msg_type == 'ACK': # msg_type이 ACK일 경우, 본문이 First-Move 또는 New-Move 여야 함
@@ -487,13 +493,13 @@ def check_msg(msg, recv_ip): # 메시지 유효성 여부 확인
         body = lines[2].strip()
 
         # First-move: 는 본문이 0 또는 1이어야 함
-        if body.startswith('First-Move:'):
+        if 'First-Move:' in lines[2]:
             val = body[len('First-Move:'):].strip()
             if val not in ('0', '1'):
                 return False
 
         # New-Move:는 본문이 좌표값이 와야 함
-        elif body.startswith('New-Move:'):
+        elif 'New-Move:' in body:
             point = body[len('New-Move:'):].strip()
             row, col = map(int, point.strip('()').split(','))
 
@@ -503,7 +509,7 @@ def check_msg(msg, recv_ip): # 메시지 유효성 여부 확인
 
     elif msg_type == 'RESULT': # msg_type이 RESULT일 경우, 본문이 Winner여야 함
         # "Winner:ME" or "Winner:YOU" 가 아니라면, False
-        if not lines[2].startswith('Winner:'):
+        if 'Winner:' not in lines[2]:
             return False
         val = lines[2][len('Winner:'):].strip()
         if val not in ('ME', 'YOU'):
